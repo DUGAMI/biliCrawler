@@ -11,6 +11,7 @@ from calendar import monthrange
 
 from selenium import webdriver
 import time
+from splitDanmu import splitDanmu
 
 
 def write_down(html, filename='test.html'):
@@ -89,16 +90,13 @@ def get_basicInfo(aid):
 #命令行信息处理
 def get_input_id():
     parser = argparse.ArgumentParser(description='Welcome to BILI')
-    parser.add_argument('-i', '--input', help='set the av_number to crawl')
+    parser.add_argument('mode',help="crawl mode and split mode")
+    parser.add_argument('-i', '--input', help='set the av_number to crawl or set the input csv')
     parser.add_argument('-o', '--output', help='set the filename to store')
+    parser.add_argument('-g','--grain',help='set the grain of split mode')
     args = parser.parse_args()
-    if args.output:
-        filename = args.output
-    else:
-        filename = 'test.csv'
-    aid = str(args.input)
 
-    return (aid,filename)
+    return args
 
 #获取爬取视频的所有有弹幕的日期
 def get_date(cid,postTime):
@@ -141,7 +139,7 @@ def get_movie_url(start_url, page=1):
         name_list: 电影名称列表，两个列表对应
     '''
     # 实例化一个浏览器
-    driver = webdriver.Chrome(r'C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe')
+    driver = webdriver.Chrome()
     current_url = start_url
     url_list = []
     name_list = []
@@ -166,10 +164,15 @@ def get_movie_url(start_url, page=1):
 
 def main():
 
-    aid,filename=get_input_id()
-    basicInfo = get_basicInfo(aid)
-    res = get_date(basicInfo["cid"], basicInfo["time"])
-    get_danmuku(basicInfo["cid"], filename, res)
+    args_dic=vars(get_input_id())
+
+    if args_dic['mode']=="crawl":
+        basicInfo = get_basicInfo(args_dic['input'])
+        res = get_date(basicInfo["cid"], basicInfo["time"])
+        get_danmuku(basicInfo["cid"], args_dic['output'], res)
+
+    elif args_dic['mode']=="split":
+        splitDanmu(args_dic['input'],args_dic['output'],int(args_dic['grain']))
 
     #获取电影url和电影名列表（还没有和爬取弹幕结合），page设置爬取页数
     start_url = 'https://www.bilibili.com/movie/index/#st=2&order=2&area=-1&style_id=-1&release_date=-1&season_status=-1&sort=0&page=1'
